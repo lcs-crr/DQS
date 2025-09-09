@@ -5,7 +5,7 @@
 This work integrates active learning with an existing unsupervised anomaly detection method by selectively querying the labels of multivariate time series, which are then used to refine the threshold selection process.
 To achieve this, we introduce a novel query strategy called the dissimilarity-based query strategy (DQS).
 DQS aims to maximise the diversity of queried samples by evaluating the similarity between anomaly scores using dynamic time warping.
-The preprint of the paper corresponding to this repository can be found on [arXiv]().
+The preprint of the paper corresponding to this repository can be found on [arXiv](https://arxiv.org/abs/2509.05663).
 
 ## Data Set Download
 If you are interested in working with the dataset used, please refer to the corresponding [PATH](https://github.com/lcs-crr/PATH) repository 
