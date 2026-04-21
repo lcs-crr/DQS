@@ -6,7 +6,6 @@ Einsteinweg 55 | 2333 CC Leiden | The Netherlands
 
 import numpy as np
 from utilities import base_class
-import tensorflow_probability as tfp
 
 
 class AnomalyDetector(base_class.BaseProcessor):

@@ -9,7 +9,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from utilities import inference_class
 
 # Declare constants
@@ -21,11 +21,11 @@ tf.keras.utils.set_random_seed(SEED)
 tf.config.experimental.enable_op_determinism()
 
 # Load variables in .env file
-config = dotenv_values("../.env")
+load_dotenv()
 
 # Load directory paths from .env file
-data_path = config['data_path']
-model_path = config['model_path']
+data_path = os.environ["data_path"]
+model_path = os.environ["model_path"]
 
 # Iterate through model seeds and folds
 for fold_idx in range(3):

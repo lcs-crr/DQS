@@ -11,7 +11,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import tensorflow as tf
 from tqdm.contrib import itertools
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from sklearn import metrics
 from utilities import detection_class
 import pandas as pd
@@ -21,9 +21,10 @@ folds = [0, 1, 2]
 splits = ['1day', '1week', '2weeks', '3weeks', '4weeks']
 
 # Load variables in .env file
-config = dotenv_values("../.env")
-data_path = os.path.join(config['data_path'], 'dsq')
-model_path = os.path.join(config['model_path'], 'dsq')
+load_dotenv()
+
+data_path = os.environ["data_path"]
+model_path = os.environ["model_path"]
 
 results = []
 for fold_idx, split in itertools.product(folds, splits):
@@ -97,7 +98,7 @@ try:
         results.to_excel(
             writer,
             index=False,
-            sheet_name=f'best'
+            sheet_name='best'
         )
 finally:
     # Cleanup: Remove default 'Sheet' if it exists

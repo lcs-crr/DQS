@@ -1,16 +1,36 @@
 [project]
-name = "dsal"
+name = "DQS"
 version = "0.1.0"
-description = "This is the corresponding .toml file required to create the project's uv environment."
-requires-python = "==3.10"
+description = "This is the repository containing all code necessary to reproduce the results in the paper."
+authors = [
+    { name = "Lucas Correia", email = "github.freehand702@passmail.net" }
+]
+requires-python = "~=3.10.0"
 dependencies = [
-    'tensorflow[and-cuda]==2.15.1',
-    'tensorflow-probability==0.23.0',
-    'statsmodels',
-    'dtaidistance',
-    'plotly',
-    'python-dotenv',
-    'scikit-learn',
-    'tqdm',
-    'openpyxl',
+    "tensorflow[and-cuda]==2.15.1",
+    "tensorflow-probability==0.23.0",
+    "statsmodels>=0.14.6",
+    "dtaidistance>=2.4.0",
+    "plotly>=6.7.0",
+    "python-dotenv>=1.2.2",
+    "scikit-learn>=1.7.2",
+    "tqdm>=4.67.3",
+    "openpyxl>=3.1.5",
+]
+
+[tool.uv]
+python-downloads = "automatic"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["utilities*"]
+
+[tool.deptry]
+exclude = [".venv"]
+
+[dependency-groups]
+dev = [
+    "deptry>=0.25.1",
+    "prek>=0.3.8",
+    "ruff>=0.15.8",
 ]

@@ -10,7 +10,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from utilities import data_class
 
 # Declare constants
@@ -23,11 +23,11 @@ tf.keras.utils.set_random_seed(SEED)
 tf.config.experimental.enable_op_determinism()
 
 # Load variables in .env file
-config = dotenv_values("../.env")
+load_dotenv()
 
 # Load directory paths from .env file
-data_path = config['data_path']
-model_path = config['model_path']
+data_path = os.environ["data_path"]
+model_path = os.environ["model_path"]
 
 data_processor = data_class.DataProcessor(
     original_sampling_rate=FREQ_ORIG,

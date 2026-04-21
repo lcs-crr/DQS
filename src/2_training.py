@@ -8,8 +8,8 @@ import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
-from dotenv import dotenv_values
-from model_garden.tevae import *
+from dotenv import load_dotenv
+from model_garden.tevae import TEVAE, TEVAE_Encoder, TEVAE_Decoder, MA, KLAnnealing
 from utilities import data_class
 
 strategy = tf.distribute.MirroredStrategy()
@@ -24,11 +24,11 @@ tf.keras.utils.set_random_seed(SEED)
 tf.config.experimental.enable_op_determinism()
 
 # Load variables in .env file
-config = dotenv_values("../.env")
+load_dotenv()
 
 # Load directory paths from .env file
-data_path = config['data_path']
-model_path = config['model_path']
+data_path = os.environ["data_path"]
+model_path = os.environ["model_path"]
 
 for fold_idx in range(3):
     for split in ['1day', '1week', '2weeks', '3weeks', '4weeks']:

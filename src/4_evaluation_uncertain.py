@@ -11,7 +11,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import tensorflow as tf
 from tqdm.contrib import itertools
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from sklearn import metrics
 from utilities import detection_class
 import pandas as pd
@@ -26,9 +26,10 @@ BUDGET = 10
 MISLABEL_PROB = 0
 
 # Load variables in .env file
-config = dotenv_values("../.env")
-data_path = config['data_path']
-model_path = config['model_path']
+load_dotenv()
+
+data_path = os.environ["data_path"]
+model_path = os.environ["model_path"]
 
 results = []
 for seed, fold_idx in itertools.product(seeds, folds):
