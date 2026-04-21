@@ -7,7 +7,7 @@ Einsteinweg 55 | 2333 CC Leiden | The Netherlands
 import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from dotenv import load_dotenv
@@ -32,34 +32,40 @@ model_path = os.environ["model_path"]
 data_processor = data_class.DataProcessor(
     original_sampling_rate=FREQ_ORIG,
     target_sampling_rate=FREQ_TARGET,
-    scale_method='z-score'
+    scale_method="z-score",
 )
 
 # Specify paths for loading and saving data
-data_load_path = os.path.join(data_path, '1_postsim')
-data_save_path = os.path.join(data_path, '2_preprocessed')
+data_load_path = os.path.join(data_path, "1_postsim")
+data_save_path = os.path.join(data_path, "2_preprocessed")
 os.makedirs(data_save_path, exist_ok=True)
 
-train_list_fold = data_processor.load_pickle(os.path.join(data_load_path, 'train.pkl'))
-test_list_fold = data_processor.load_pickle(os.path.join(data_load_path, 'test.pkl'))
+train_list_fold = data_processor.load_pickle(os.path.join(data_load_path, "train.pkl"))
+test_list_fold = data_processor.load_pickle(os.path.join(data_load_path, "test.pkl"))
 
 for fold_idx, _ in enumerate(train_list_fold):
     # Downsample data lists
     train_list_resampled = data_processor.downsample_list(train_list_fold[fold_idx])
     test_list_resampled = data_processor.downsample_list(test_list_fold[fold_idx])
 
-    split_idcs = data_processor.split_into_hours(train_list_resampled, [1, 7, 14, 21, 28])
-    split_names = ['1day', '1week', '2weeks', '3weeks', '4weeks']
+    split_idcs = data_processor.split_into_hours(
+        train_list_resampled, [1, 7, 14, 21, 28]
+    )
+    split_names = ["1day", "1week", "2weeks", "3weeks", "4weeks"]
 
-    os.makedirs(os.path.join(data_save_path, 'fold_' + str(fold_idx)), exist_ok=True)
-    file = open(os.path.join(data_save_path, 'fold_' + str(fold_idx), 'split_idcs.txt'), 'w')
+    os.makedirs(os.path.join(data_save_path, "fold_" + str(fold_idx)), exist_ok=True)
+    file = open(
+        os.path.join(data_save_path, "fold_" + str(fold_idx), "split_idcs.txt"), "w"
+    )
     for split_idx, split in enumerate(split_idcs):
         file.write(str(split) + "\n")
     file.close()
 
     for split_idx, split in enumerate(split_idcs):
         # Split training data into training and validation
-        train_list_resampled_split, val_list_resampled_split = train_test_split(train_list_resampled[:split], random_state=SEED, test_size=0.2)
+        train_list_resampled_split, val_list_resampled_split = train_test_split(
+            train_list_resampled[:split], random_state=SEED, test_size=0.2
+        )
 
         # Find the scalers for each feature
         data_processor.find_scalers_from_list(train_list_resampled_split)
@@ -85,10 +91,44 @@ for fold_idx, _ in enumerate(train_list_fold):
         tfdata_val = tfdata_val.shuffle(tfdata_val.cardinality(), seed=SEED)
 
         # Save training and validation data as tf.data
-        tf.data.Dataset.save(tfdata_train, os.path.join(data_save_path, 'fold_' + str(fold_idx), split_names[split_idx], 'train'))
-        tf.data.Dataset.save(tfdata_val, os.path.join(data_save_path, 'fold_' + str(fold_idx), split_names[split_idx], 'val'))
+        tf.data.Dataset.save(
+            tfdata_train,
+            os.path.join(
+                data_save_path, "fold_" + str(fold_idx), split_names[split_idx], "train"
+            ),
+        )
+        tf.data.Dataset.save(
+            tfdata_val,
+            os.path.join(
+                data_save_path, "fold_" + str(fold_idx), split_names[split_idx], "val"
+            ),
+        )
 
         # Save training, validation and testing data as pickle files
-        data_processor.dump_pickle(train_list_scaled, os.path.join(data_save_path, 'fold_' + str(fold_idx), split_names[split_idx], 'train.pkl'))
-        data_processor.dump_pickle(val_list_scaled, os.path.join(data_save_path, 'fold_' + str(fold_idx), split_names[split_idx], 'val.pkl'))
-        data_processor.dump_pickle(test_list_scaled, os.path.join(data_save_path, 'fold_' + str(fold_idx), split_names[split_idx], 'test.pkl'))
+        data_processor.dump_pickle(
+            train_list_scaled,
+            os.path.join(
+                data_save_path,
+                "fold_" + str(fold_idx),
+                split_names[split_idx],
+                "train.pkl",
+            ),
+        )
+        data_processor.dump_pickle(
+            val_list_scaled,
+            os.path.join(
+                data_save_path,
+                "fold_" + str(fold_idx),
+                split_names[split_idx],
+                "val.pkl",
+            ),
+        )
+        data_processor.dump_pickle(
+            test_list_scaled,
+            os.path.join(
+                data_save_path,
+                "fold_" + str(fold_idx),
+                split_names[split_idx],
+                "test.pkl",
+            ),
+        )

@@ -6,7 +6,7 @@ Einsteinweg 55 | 2333 CC Leiden | The Netherlands
 
 import math
 import numpy as np
-from scipy.signal import butter, lfilter, sosfilt
+from scipy.signal import butter, sosfilt
 from statsmodels.tsa import stattools
 from typing import List, Union
 from utilities import base_class
@@ -14,12 +14,12 @@ from utilities import base_class
 
 class DataProcessor(base_class.BaseProcessor):
     def __init__(
-            self,
-            window_size: int = None,
-            original_sampling_rate: int = None,
-            target_sampling_rate: int = None,
-            scale_method: str = None,
-            window_shift: Union[int, str] = 'half',
+        self,
+        window_size: int = None,
+        original_sampling_rate: int = None,
+        target_sampling_rate: int = None,
+        scale_method: str = None,
+        window_shift: Union[int, str] = "half",
     ) -> None:
         """
         This class comprises all required functions to process the data.
@@ -43,8 +43,8 @@ class DataProcessor(base_class.BaseProcessor):
         self.downsampled_flag = None
 
     def find_window_size_from_list(
-            self,
-            data_list: List[np.ndarray],
+        self,
+        data_list: List[np.ndarray],
     ) -> None:
         """
         This function finds the window size required to model the dynamics in all channels of a multivariate time series.
@@ -64,7 +64,7 @@ class DataProcessor(base_class.BaseProcessor):
                 corr = corr_array[0]
                 try:
                     intersection_list.append(np.min(np.where(corr - upper_y < 0)[0]))
-                except:
+                except Exception:
                     continue
             # Append maximum window size for each channel
             possible_window_sizes.append(np.max(intersection_list))
@@ -72,17 +72,24 @@ class DataProcessor(base_class.BaseProcessor):
         candidate_window_size = np.max(possible_window_sizes)
         # If window_size is not supposed to be rounded, return it as is
         round_to_power = 2
-        upper_window_size = round_to_power ** (np.ceil(math.log(candidate_window_size, round_to_power)))
-        lower_window_size = round_to_power ** (np.floor(math.log(candidate_window_size, round_to_power)))
+        upper_window_size = round_to_power ** (
+            np.ceil(math.log(candidate_window_size, round_to_power))
+        )
+        lower_window_size = round_to_power ** (
+            np.floor(math.log(candidate_window_size, round_to_power))
+        )
         # Find which rounded window size is closer to the candidate window size and return it
-        if upper_window_size - candidate_window_size > candidate_window_size - lower_window_size:
+        if (
+            upper_window_size - candidate_window_size
+            > candidate_window_size - lower_window_size
+        ):
             self.window_size = int(lower_window_size)
         else:
             self.window_size = int(upper_window_size)
 
     def window_list(
-            self,
-            input_list: List[np.ndarray],
+        self,
+        input_list: List[np.ndarray],
     ) -> np.ndarray:
         """
         Generates windows from an array.
@@ -91,21 +98,30 @@ class DataProcessor(base_class.BaseProcessor):
         :return: array of windows of shape (number_of_windows, window_size, channels)
         """
 
-        assert isinstance(input_list, list), 'input_list argument must be a list!'
-        assert all(isinstance(input_array, np.ndarray) for input_array in input_list), 'All items in input_list must be numpy arrays!'
-        assert all(input_array.ndim == 2 for input_array in input_list), 'All items in input_list must be 2D numpy arrays!'
-        assert self.window_size is not None, 'To window the sequences in the list, find the window size first by running the find_window_size_from_list method first!'
+        assert isinstance(input_list, list), "input_list argument must be a list!"
+        assert all(isinstance(input_array, np.ndarray) for input_array in input_list), (
+            "All items in input_list must be numpy arrays!"
+        )
+        assert all(input_array.ndim == 2 for input_array in input_list), (
+            "All items in input_list must be 2D numpy arrays!"
+        )
+        assert self.window_size is not None, (
+            "To window the sequences in the list, find the window size first by running the find_window_size_from_list method first!"
+        )
 
         if not isinstance(self.window_shift, int):
-            if self.window_shift == 'half':
+            if self.window_shift == "half":
                 self.window_shift = self.window_size // 2
 
-        output_list = [self.window_array(input_array, self.window_size, self.window_shift) for input_array in input_list]
+        output_list = [
+            self.window_array(input_array, self.window_size, self.window_shift)
+            for input_array in input_list
+        ]
         return np.vstack(output_list)
 
     def find_scalers_from_list(
-            self,
-            input_list: List[np.ndarray],
+        self,
+        input_list: List[np.ndarray],
     ) -> None:
         """
         This function finds the channel-wise minimum, maximum, mean and standard deviation for each channel in a list of arrays.
@@ -119,8 +135,8 @@ class DataProcessor(base_class.BaseProcessor):
         self.standard_deviation = np.std(np.vstack(input_list), axis=0)
 
     def scale_list(
-            self,
-            input_list: List[np.ndarray],
+        self,
+        input_list: List[np.ndarray],
     ) -> List[np.ndarray]:
         """
         This function scales a list of multivariate time series according to the provided method.
@@ -128,27 +144,45 @@ class DataProcessor(base_class.BaseProcessor):
         :param input_list: list of multivariate time series, each of shape (number_of_timesteps, channels)
         """
 
-        assert isinstance(input_list, list), 'input_list argument must be a list!'
-        assert all(isinstance(input_array, np.ndarray) for input_array in input_list), 'All items in input_list must be numpy arrays!'
-        assert all(input_array.ndim == 2 for input_array in input_list), 'All items in input_list must be 2D numpy arrays!'
-        assert self.minimum is not None, 'To scale the list, find the scalers first by running the find_scalers_from_list method first!'
-        assert self.maximum is not None, 'To scale the list, find the scalers first by running the find_scalers_from_list method first!'
-        assert self.mean is not None, 'To scale the list, find the scalers first by running the find_scalers_from_list method first!'
-        assert self.standard_deviation is not None, 'To scale the list, find the scalers first by running the find_scalers_from_list method first!'
+        assert isinstance(input_list, list), "input_list argument must be a list!"
+        assert all(isinstance(input_array, np.ndarray) for input_array in input_list), (
+            "All items in input_list must be numpy arrays!"
+        )
+        assert all(input_array.ndim == 2 for input_array in input_list), (
+            "All items in input_list must be 2D numpy arrays!"
+        )
+        assert self.minimum is not None, (
+            "To scale the list, find the scalers first by running the find_scalers_from_list method first!"
+        )
+        assert self.maximum is not None, (
+            "To scale the list, find the scalers first by running the find_scalers_from_list method first!"
+        )
+        assert self.mean is not None, (
+            "To scale the list, find the scalers first by running the find_scalers_from_list method first!"
+        )
+        assert self.standard_deviation is not None, (
+            "To scale the list, find the scalers first by running the find_scalers_from_list method first!"
+        )
 
-        if self.scale_method == 'z-score':
-            return [(time_series - self.mean) / self.standard_deviation for time_series in input_list]
-        elif self.scale_method == 'min-max':
-            return [(time_series - self.minimum) / (self.maximum - self.minimum) for time_series in input_list]
+        if self.scale_method == "z-score":
+            return [
+                (time_series - self.mean) / self.standard_deviation
+                for time_series in input_list
+            ]
+        elif self.scale_method == "min-max":
+            return [
+                (time_series - self.minimum) / (self.maximum - self.minimum)
+                for time_series in input_list
+            ]
         elif self.scale_method is None:
             return [time_series for time_series in input_list]
         else:
-            raise ValueError('Invalid scaling method!')
+            raise ValueError("Invalid scaling method!")
 
     def downsample_list(
-            self,
-            input_list: List[np.ndarray],
-            reduce: bool = True,
+        self,
+        input_list: List[np.ndarray],
+        reduce: bool = True,
     ) -> List[np.ndarray]:
         """
         This function applies a low-pass Butterworth filter to a multivariate time series.
@@ -157,41 +191,73 @@ class DataProcessor(base_class.BaseProcessor):
         :param reduce: if true, reduce signal to target sampling frequency
         """
 
-        assert isinstance(input_list, list), 'input_list argument must be a list!'
-        assert all(isinstance(input_array, np.ndarray) for input_array in input_list), 'All items in input_list must be numpy arrays!'
-        assert all(input_array.ndim == 2 for input_array in input_list), 'All items in input_list must be 2D numpy arrays!'
-        assert self.original_sampling_rate is not None, 'original_sampling_rate argument must be provided!'
-        assert self.target_sampling_rate is not None, 'target_sampling_rate argument must be provided!'
-        assert self.original_sampling_rate > self.target_sampling_rate, 'target_sampling_rate must be lower than original_sampling_rate!'
+        assert isinstance(input_list, list), "input_list argument must be a list!"
+        assert all(isinstance(input_array, np.ndarray) for input_array in input_list), (
+            "All items in input_list must be numpy arrays!"
+        )
+        assert all(input_array.ndim == 2 for input_array in input_list), (
+            "All items in input_list must be 2D numpy arrays!"
+        )
+        assert self.original_sampling_rate is not None, (
+            "original_sampling_rate argument must be provided!"
+        )
+        assert self.target_sampling_rate is not None, (
+            "target_sampling_rate argument must be provided!"
+        )
+        assert self.original_sampling_rate > self.target_sampling_rate, (
+            "target_sampling_rate must be lower than original_sampling_rate!"
+        )
         if reduce:
-            assert self.original_sampling_rate % self.target_sampling_rate == 0, 'target_sampling_rate must be a multiple of original_sampling_rate!'
+            assert self.original_sampling_rate % self.target_sampling_rate == 0, (
+                "target_sampling_rate must be a multiple of original_sampling_rate!"
+            )
 
         self.downsampled_flag = True
 
         output_list = []
         for _, input_array in enumerate(input_list):
-            file_name = input_array.dtype.metadata['file_name']
+            file_name = input_array.dtype.metadata["file_name"]
             lowpass_input_array = np.zeros_like(input_array)
             for channel_idx, channel in enumerate(np.rollaxis(input_array, 1)):
-                pad_amount = self.target_sampling_rate * 100  # Pad signal to avoid oscillations
-                channel_padded = np.pad(channel, (pad_amount, pad_amount), 'constant', constant_values=(channel[0], channel[-1]))
-                sos = butter(N=1, Wn=self.target_sampling_rate // 2, fs=self.original_sampling_rate, btype='low', output='sos')
+                pad_amount = (
+                    self.target_sampling_rate * 100
+                )  # Pad signal to avoid oscillations
+                channel_padded = np.pad(
+                    channel,
+                    (pad_amount, pad_amount),
+                    "constant",
+                    constant_values=(channel[0], channel[-1]),
+                )
+                sos = butter(
+                    N=1,
+                    Wn=self.target_sampling_rate // 2,
+                    fs=self.original_sampling_rate,
+                    btype="low",
+                    output="sos",
+                )
                 lowpass_channel = sosfilt(sos, channel_padded)
-                lowpass_input_array[:, channel_idx] = lowpass_channel[pad_amount:-pad_amount]
+                lowpass_input_array[:, channel_idx] = lowpass_channel[
+                    pad_amount:-pad_amount
+                ]
 
-                assert not np.any(np.isnan(lowpass_input_array)), 'There is NaNs in the data after downsampling!'
+                assert not np.any(np.isnan(lowpass_input_array)), (
+                    "There is NaNs in the data after downsampling!"
+                )
             if reduce:
-                lowpass_input_array = lowpass_input_array[::self.original_sampling_rate // self.target_sampling_rate]
+                lowpass_input_array = lowpass_input_array[
+                    :: self.original_sampling_rate // self.target_sampling_rate
+                ]
 
             lowpass_input_array = lowpass_input_array.astype(
-                np.dtype('float32', metadata={'file_name': file_name}))
+                np.dtype("float32", metadata={"file_name": file_name})
+            )
             output_list.append(lowpass_input_array)
         return output_list
 
     def split_into_hours(
-            self,
-            input_list: List[np.ndarray],
-            hour_splits: List[int],
+        self,
+        input_list: List[np.ndarray],
+        hour_splits: List[int],
     ) -> List[int]:
         """
         This method splits input_list into chunks as long as the hours specified in hour_splits.
@@ -208,7 +274,9 @@ class DataProcessor(base_class.BaseProcessor):
 
         time_duration = []
         for _, input_array in enumerate(input_list):
-            time_duration.append(len(input_array) / (sampling_rate * 60 * 60))  # 2*60*60 to convert to hours
+            time_duration.append(
+                len(input_array) / (sampling_rate * 60 * 60)
+            )  # 2*60*60 to convert to hours
         cum_time_duration = np.cumsum(time_duration)
 
         splits_idcs = []
@@ -219,8 +287,8 @@ class DataProcessor(base_class.BaseProcessor):
 
     @staticmethod
     def find_nearest_index(
-            input_array: np.ndarray,
-            target_value: float,
+        input_array: np.ndarray,
+        target_value: float,
     ):
         """
         This method finds the index of the value inside input_array which is closest to target_value.

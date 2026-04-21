@@ -7,7 +7,7 @@ Einsteinweg 55 | 2333 CC Leiden | The Netherlands
 import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import numpy as np
 import tensorflow as tf
 from tqdm.contrib import itertools
@@ -17,9 +17,10 @@ from utilities import detection_class
 import pandas as pd
 import openpyxl
 
+
 seeds = [1, 2, 3]
 folds = [0, 1, 2]
-splits = ['1day', '1week', '2weeks', '3weeks', '4weeks']
+splits = ["1day", "1week", "2weeks", "3weeks", "4weeks"]
 
 # Declare constants
 BUDGET = 10
@@ -35,18 +36,24 @@ results = []
 for seed, fold_idx in itertools.product(seeds, folds):
     # Set fixed seed for random operations
     np.random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
 
     query_list = []
     query_score_list = []
-    for split_idx, split in enumerate(splits):
-        data_load_path = os.path.join(data_path, '2_preprocessed', 'fold_' + str(fold_idx))
+    combo_results = []
 
-        model_name = 'tevae_' + split + '_' + str(fold_idx) + '_1'  # Fixed model seed due to focus on query strategy
+    for split in splits:
+        data_load_path = os.path.join(
+            data_path, "2_preprocessed", "fold_" + str(fold_idx)
+        )
+
+        model_name = (
+            "tevae_" + split + "_" + str(fold_idx) + "_1"
+        )  # Fixed model seed due to focus on query strategy
         model_load_path = os.path.join(model_path, model_name)
 
         # Load tf validation data to extract window size
-        tfdata_val = tf.data.Dataset.load(os.path.join(data_load_path, split, 'val'))
+        tfdata_val = tf.data.Dataset.load(os.path.join(data_load_path, split, "val"))
 
         detector = detection_class.AnomalyDetector(
             model_path=model_load_path,
@@ -54,28 +61,48 @@ for seed, fold_idx in itertools.product(seeds, folds):
             sampling_rate=2,
             original_sampling_rate=10,
             calculate_delay=True,
-            label_keyword='normal',
+            label_keyword="normal",
             mislabel_prob=MISLABEL_PROB,
         )
 
         # Load input data
-        train_list = detector.load_pickle(os.path.join(data_load_path, split, 'train.pkl'))
-        val_list = detector.load_pickle(os.path.join(data_load_path, split, 'val.pkl'))
-        test_list = detector.load_pickle(os.path.join(data_load_path, split, 'test.pkl'))
+        train_list = detector.load_pickle(
+            os.path.join(data_load_path, split, "train.pkl")
+        )
+        val_list = detector.load_pickle(os.path.join(data_load_path, split, "val.pkl"))
+        test_list = detector.load_pickle(
+            os.path.join(data_load_path, split, "test.pkl")
+        )
 
         # Load inference data
-        train_detection_score_list = detector.load_pickle(os.path.join(model_load_path, 'train_detection_score.pkl'))
-        val_detection_score_list = detector.load_pickle(os.path.join(model_load_path, 'val_detection_score.pkl'))
-        test_detection_score_list = detector.load_pickle(os.path.join(model_load_path, 'test_detection_score.pkl'))
+        train_detection_score_list = detector.load_pickle(
+            os.path.join(model_load_path, "train_detection_score.pkl")
+        )
+        val_detection_score_list = detector.load_pickle(
+            os.path.join(model_load_path, "val_detection_score.pkl")
+        )
+        test_detection_score_list = detector.load_pickle(
+            os.path.join(model_load_path, "test_detection_score.pkl")
+        )
 
         # Combine training and validation data to get candidate list
         candidate_list = train_list + val_list
         candidate_score_list = train_detection_score_list + val_detection_score_list
 
         # Remove previously queried data from candidate list
-        queried_filenames_list = [query_ts.dtype.metadata['file_name'] for query_ts in query_list]
-        candidate_list = [candidate_ts for candidate_ts in candidate_list if candidate_ts.dtype.metadata['file_name'] not in queried_filenames_list]
-        candidate_score_list = [candidate_score for candidate_score in candidate_score_list if candidate_score.dtype.metadata['file_name'] not in queried_filenames_list]
+        queried_filenames_list = [
+            query_ts.dtype.metadata["file_name"] for query_ts in query_list
+        ]
+        candidate_list = [
+            candidate_ts
+            for candidate_ts in candidate_list
+            if candidate_ts.dtype.metadata["file_name"] not in queried_filenames_list
+        ]
+        candidate_score_list = [
+            candidate_score
+            for candidate_score in candidate_score_list
+            if candidate_score.dtype.metadata["file_name"] not in queried_filenames_list
+        ]
 
         # Query strategy
         for _ in range(BUDGET):
@@ -93,19 +120,25 @@ for seed, fold_idx in itertools.product(seeds, folds):
         query_contaminated_list = detector.corrupt_labels(query_groundtruth_list)
 
         # Grid search for thresholds using labelled data
-        f1_list = []
         reduced_query_score_list = np.concatenate(query_score_list).ravel()
         percentile_array = np.arange(0, 100.01, 0.01)
-        for threshold_percentile in percentile_array:
-            threshold_temp = np.percentile(reduced_query_score_list, threshold_percentile)
-            groundtruth_labels_temp, predicted_labels_temp, _ = detector.evaluate_online(
-                detection_score_list=query_score_list,
-                groundtruth_list=query_contaminated_list,
-                threshold=threshold_temp,
+        thresholds = np.percentile(reduced_query_score_list, percentile_array)
+
+        f1_list = []
+        for threshold_temp in thresholds:
+            groundtruth_labels_temp, predicted_labels_temp, _ = (
+                detector.evaluate_online(
+                    detection_score_list=query_score_list,
+                    groundtruth_list=query_contaminated_list,
+                    threshold=threshold_temp,
+                )
             )
-            f1_list.append(metrics.f1_score(groundtruth_labels_temp, predicted_labels_temp, zero_division=0.0))
-        f1_list = np.vstack(f1_list)
-        threshold = np.percentile(reduced_query_score_list, percentile_array[np.argmax(f1_list)]).astype(float)
+            f1_list.append(
+                metrics.f1_score(
+                    groundtruth_labels_temp, predicted_labels_temp, zero_division=0.0
+                )
+            )
+        threshold = float(thresholds[np.argmax(f1_list)])
 
         # Evaluate using threshold
         groundtruth_labels, predicted_labels, total_delays = detector.evaluate_online(
@@ -114,38 +147,47 @@ for seed, fold_idx in itertools.product(seeds, folds):
             threshold=threshold,
         )
 
-        results.append({
-            'Seed': seed,
-            'Fold': fold_idx,
-            'Split': split,
-            'F1': metrics.f1_score(groundtruth_labels, predicted_labels, zero_division=0.0),
-            'Precision': metrics.precision_score(groundtruth_labels, predicted_labels, zero_division=0.0),
-            'Recall': metrics.recall_score(groundtruth_labels, predicted_labels, zero_division=0.0),
-            'Delay': np.mean(total_delays),
-            'Threshold': threshold
-        })
+        combo_results.append(
+            {
+                "Seed": seed,
+                "Fold": fold_idx,
+                "Split": split,
+                "F1": metrics.f1_score(
+                    groundtruth_labels, predicted_labels, zero_division=0.0
+                ),
+                "Precision": metrics.precision_score(
+                    groundtruth_labels, predicted_labels, zero_division=0.0
+                ),
+                "Recall": metrics.recall_score(
+                    groundtruth_labels, predicted_labels, zero_division=0.0
+                ),
+                "Delay": np.mean(total_delays),
+                "Threshold": threshold,
+            }
+        )
+
+    results.extend(combo_results)
 
 results = pd.DataFrame(results)
 
-if not os.path.isfile(os.path.join(model_path, 'results.xlsx')):
-    # Create and save a valid Excel file
+if not os.path.isfile(os.path.join(model_path, "results.xlsx")):
     wb = openpyxl.Workbook()
-    wb.save(os.path.join(model_path, 'results.xlsx'))
+    wb.save(os.path.join(model_path, "results.xlsx"))
 
 # Use a try-finally block to ensure proper handling
 try:
-    with pd.ExcelWriter(os.path.join(model_path, 'results.xlsx'), mode='a', if_sheet_exists='overlay') as writer:
+    with pd.ExcelWriter(
+        os.path.join(model_path, "results.xlsx"), mode="a", if_sheet_exists="overlay"
+    ) as writer:
         results.to_excel(
-            writer,
-            index=False,
-            sheet_name=f'rand_{BUDGET}_{int(MISLABEL_PROB * 100)}'
+            writer, index=False, sheet_name=f"rand_{BUDGET}_{int(MISLABEL_PROB * 100)}"
         )
 finally:
     # Cleanup: Remove default 'Sheet' if it exists
     try:
-        workbook = openpyxl.load_workbook(os.path.join(model_path, 'results.xlsx'))
-        if 'Sheet' in workbook.sheetnames:
-            del workbook['Sheet']
-        workbook.save(os.path.join(model_path, 'results.xlsx'))
+        workbook = openpyxl.load_workbook(os.path.join(model_path, "results.xlsx"))
+        if "Sheet" in workbook.sheetnames:
+            del workbook["Sheet"]
+        workbook.save(os.path.join(model_path, "results.xlsx"))
     except Exception as e:
         print(f"Error cleaning up sheets: {e}")

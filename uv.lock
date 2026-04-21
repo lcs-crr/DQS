@@ -216,10 +216,13 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "dtaidistance" },
+    { name = "numpy" },
     { name = "openpyxl" },
+    { name = "pandas" },
     { name = "plotly" },
     { name = "python-dotenv" },
     { name = "scikit-learn" },
+    { name = "scipy" },
     { name = "statsmodels" },
     { name = "tensorflow", extra = ["and-cuda"] },
     { name = "tensorflow-probability" },
@@ -236,10 +239,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "dtaidistance", specifier = ">=2.4.0" },
+    { name = "numpy", specifier = ">=1.26.4" },
     { name = "openpyxl", specifier = ">=3.1.5" },
+    { name = "pandas", specifier = ">=2.3.3" },
     { name = "plotly", specifier = ">=6.7.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "scikit-learn", specifier = ">=1.7.2" },
+    { name = "scipy", specifier = ">=1.15.3" },
     { name = "statsmodels", specifier = ">=0.14.6" },
     { name = "tensorflow", extras = ["and-cuda"], specifier = "==2.15.1" },
     { name = "tensorflow-probability", specifier = "==0.23.0" },

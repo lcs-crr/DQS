@@ -11,7 +11,7 @@ import numpy as np
 class BaseProcessor:
     @staticmethod
     def load_pickle(
-            file_dir,
+        file_dir,
     ):
         """
         This method loads a pickle file.
@@ -19,13 +19,13 @@ class BaseProcessor:
         :param file_dir: directory to file to load
         """
 
-        with open(file_dir, 'rb') as f:
+        with open(file_dir, "rb") as f:
             return pickle.load(f)
 
     @staticmethod
     def dump_pickle(
-            obj,
-            file_dir,
+        obj,
+        file_dir,
     ):
         """
         This method dumps an object to a pickle file.
@@ -34,15 +34,15 @@ class BaseProcessor:
         :param file_dir: directory to file to load
         """
 
-        with open(file_dir, 'wb') as file:
+        with open(file_dir, "wb") as file:
             pickle.dump(obj, file)
         return
 
     @staticmethod
     def window_array(
-            input_array: np.ndarray,
-            window_size: int = None,
-            window_shift: int = None,
+        input_array: np.ndarray,
+        window_size: int = None,
+        window_shift: int = None,
     ) -> np.ndarray:
         """
         Generates windows from an array.
@@ -61,6 +61,10 @@ class BaseProcessor:
         output_windows = np.lib.stride_tricks.as_strided(
             input_array,
             shape=(number_of_windows, window_size, channels),
-            strides=(window_shift * input_array.strides[0], input_array.strides[0], input_array.strides[1])
+            strides=(
+                window_shift * input_array.strides[0],
+                input_array.strides[0],
+                input_array.strides[1],
+            ),
         )
         return output_windows
