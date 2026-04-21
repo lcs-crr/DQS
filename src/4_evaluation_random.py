@@ -17,7 +17,7 @@ from utilities import detection_class
 import pandas as pd
 import openpyxl
 
-seeds = [1, 2, 3, 4, 5]
+seeds = [1, 2, 3]
 folds = [0, 1, 2]
 splits = ['1day', '1week', '2weeks', '3weeks', '4weeks']
 
